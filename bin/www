@@ -1,0 +1,2018 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies.
+ */
+
+var app = require("../app");
+var debug = require("debug")("lawdianscrawler:server");
+var http = require("http");
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+var port = normalizePort(process.env.PORT || "4001");
+app.set("port", port);
+
+/**
+ * Create HTTP server.
+ */
+
+var server = http.createServer(app);
+
+/**
+ * Listen on provided port, on all network interfaces.
+ */
+
+server.listen(port);
+server.on("error", onError);
+server.on("listening", onListening);
+
+/**
+ * Normalize a port into a number, string, or false.
+ */
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+
+function onError(error) {
+  if (error.syscall !== "listen") {
+    throw error;
+  }
+
+  var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
+
+  // handle specific listen errors with friendly messages
+  switch (error.code) {
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
+      process.exit(1);
+      break;
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
+      process.exit(1);
+      break;
+    default:
+      throw error;
+  }
+}
+
+/**
+ * Event listener for HTTP server "listening" event.
+ */
+
+function onListening() {
+  var addr = server.address();
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
+  var appRoot = require("app-root-path");
+  var fs = require("fs");
+  var request = require("request");
+  var cheerio = require("cheerio");
+  var queryCrawler = require("../models/queryCrawler");
+  const puppeteer = require("puppeteer");
+  const rimraf = require("rimraf");
+  var encode = require("urlencode");
+  var savePathDirectory = appRoot + "/crawlingImage/";
+  var platformArr = [
+    "gangnamsister",
+    "goodoc",
+    "meinhi",
+    "miclick",
+    "ddocdoc",
+    "reviewdoc"
+  ];
+
+  // console.log('테스트하려고 바로 실행 로직 시작');
+  // console.log(savePathDirectory);
+  // platformArr.forEach(item => {
+  //   rimraf(savePathDirectory+item, function () { console.log(item+' 삭제완료'); });
+
+  // });
+
+  // setTimeout(function(){
+  //   platformArr.forEach(item => {
+  //     fs.mkdir(savePathDirectory+item, { recursive: true }, (err) => {
+  //       if (err) throw err;
+  //       console.log(item + ' 폴더생성');
+  //     });
+  //   });
+  // },500);
+
+  // queryCrawler.truncateTable(tableNum,function (callback) {
+  //   console.log('crawler_data 비우기');
+  //   if (callback) {
+  //     setTimeout(function () {
+  //       //테스트할 플랫폼을 넣어보자
+
+  //     }, 2000);
+  //   } else {
+  //     return false;
+  //   }
+  // });
+
+  var partArr1 = [
+    "눈",
+    "필러",
+    "보톡스",
+    "반영구",
+    "피부",
+    "코",
+    "안면",
+    "모발",
+    "가슴",
+    "양악",
+    "지방"
+  ];
+  function gangnamsisterCrawling(part, tableNum) {
+    return new Promise(function(res, rej) {
+      /* 강남언니 */
+      console.log("강남언니 " + part);
+      var url = "https://www.gangnamsister.com/search?q=" + encode(part);
+      console.log(url);
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            var contentObjArr = [];
+            (async () => {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ["--window-size=1920,1080"]
+              });
+              const page = await browser.newPage();
+              await page.goto(url);
+              await page.setViewport({
+                width: 1920,
+                height: 1080
+              });
+              await page.waitFor(1000);
+              // 스크롤다운 ajax 리로딩 작업
+              const delay = 3000;
+              let preCount = 0;
+              let postCount = 0;
+              do {
+                preCount = await getCount(page);
+                await scrollDown(page);
+                await page.waitFor(delay);
+                postCount = await getCount(page);
+              } while (postCount > preCount);
+              await page.waitFor(delay);
+              // 스크롤다운 끝난 후, html 크롤링
+              const body = await page.$eval("body", (e) => e.outerHTML);
+              var $ = cheerio.load(body, {
+                decodeEntities: false
+              });
+
+              $("._7fe74354")
+                .find(".e50b6d8b")
+                .each(function(idx, el) {
+                  var linkUrl = $(this)
+                    .attr("href")
+                    .toString();
+                  var imageUrl = $(this)
+                    .find(".thumbnail")
+                    .attr("style");
+                  var location = $(this)
+                    .find("._973df2b8")
+                    .text();
+                  var title = $(this)
+                    .find(".fbf282a0")
+                    .text()
+                    .replace(/"/gi, "");
+                  var price = $(this)
+                    .find(".a1deabeb")
+                    .text()
+                    .replace(/,/gi, "")
+                    .replace("원", "");
+                  var fname = part + "_" + idx + ".jpg";
+                  var locations, hospitalName;
+                  imageUrl = imageUrl.substring(
+                    imageUrl.indexOf("https:"),
+                    imageUrl.indexOf('");')
+                  );
+                  if (location.indexOf("[") != -1) {
+                    locations = location.substring(
+                      location.indexOf("[") + 1,
+                      location.indexOf("]")
+                    );
+                    hospitalName = location.substring(
+                      location.indexOf("]") + 1
+                    );
+                  } else {
+                    locations = "";
+                    hospitalName = location;
+                  }
+                  if (isNaN(price)) {
+                    price = 0;
+                  }
+                  if (imageUrl.indexOf("_t") !== -1) {
+                    imageUrl = imageUrl.replace("_t", "");
+                  }
+                  contentObjArr[idx] = {
+                    part: part,
+                    type: 2,
+                    title: title.replace(
+                      /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                      ""
+                    ),
+                    imageUrl: imageUrl,
+                    location: locations,
+                    hospitalName: hospitalName.replace(/ /gi, ""),
+                    price: price,
+                    linkUrl: "https://www.gangnamsister.com" + linkUrl,
+                    fname: fname,
+                    icon_image: "/image/gangnamsister_logo.png",
+                    icon_image_m: "/image/gangnamsister_logo_m.png",
+                    unique_key_column:
+                      part + "_" + "https://www.gangnamsister.com" + linkUrl
+                  };
+                  var requestOptions = {
+                    method: "GET",
+                    uri: contentObjArr[idx].imageUrl,
+                    headers: {
+                      "User-Agent":
+                        "Mozilla/5.0 (Windows; U; Windows NT 10.0) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.16"
+                    },
+                    encoding: null
+                  };
+                  (async function() {
+                    await request(requestOptions).pipe(
+                      fs.createWriteStream(
+                        savePathDirectory +
+                          "gangnamsister" +
+                          tableNum +
+                          "/" +
+                          fname
+                      )
+                    );
+                  });
+                });
+              setTimeout(function() {
+                queryCrawler.crawlingDataInsert(
+                  contentObjArr,
+                  tableNum,
+                  function(callback) {
+                    console.log("강남언니 " + part + " callback : " + callback);
+                  }
+                );
+              }, 1000);
+              await browser.close();
+              await page.waitFor(500);
+              res({
+                result: "success"
+              });
+            })();
+            async function getCount(page) {
+              return await page.$$eval(".e50b6d8b", (a) => a.length);
+            }
+            async function scrollDown(page) {
+              await page.$eval("._8e7eca3d", (e) => {
+                e.scrollIntoView({
+                  behavior: "smooth",
+                  block: "end",
+                  inline: "end"
+                });
+              });
+            }
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  var partArr2_name = [
+    "몸매",
+    "눈",
+    "코",
+    "안과",
+    "치아",
+    "안면",
+    "피부",
+    "모발",
+    "한방",
+    "건강검진"
+  ];
+  var partArr2_no = [
+    "38",
+    "76",
+    "77",
+    "35",
+    "36",
+    "37",
+    "39",
+    "40",
+    "102",
+    "83"
+  ];
+
+  function goodocCrawling(partNo, partName, tableNum) {
+    return new Promise(function(res, rej) {
+      let url =
+        "http://www.goodoc.co.kr/events?funnel=organic&top_category=" + partNo;
+      console.log("굿닥 " + partName);
+      console.log(url);
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            //굿닥
+            var contentObjArr = [];
+            (async () => {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ["--window-size=1920,1080"]
+              });
+              const page = await browser.newPage();
+              await page.goto(url);
+              await page.setViewport({
+                width: 1920,
+                height: 1080
+              });
+              await page.waitFor(1000);
+              // 스크롤다운 ajax 리로딩 작업
+              const delay = 5000; //굿닥은 ajax로딩이 좀 느려서 2초
+              let preCount = 0;
+              let postCount = 0;
+              do {
+                preCount = await getCount(page);
+                await scrollDown(page);
+                await page.waitFor(delay);
+                postCount = await getCount(page);
+              } while (postCount > preCount);
+              await page.waitFor(delay);
+              // 스크롤다운 끝난 후, html 크롤링
+              const body = await page.$eval("body", (e) => e.outerHTML);
+              var $ = cheerio.load(body, {
+                decodeEntities: false
+              });
+              $("#events-list .rb-exposure")
+                .find(".new-a-event")
+                .each(function(idx, el) {
+                  var imageUrl = $(this)
+                    .find("img")
+                    .attr("src");
+                  var chk = imageUrl.indexOf("http");
+                  var fname = partName + "_" + idx + ".jpg";
+                  var title = $(this)
+                    .find(".new-event-title")
+                    .text()
+                    .replace(/"/gi, "");
+                  if (!chk == 0) {
+                    // http가 없음 == /upload/.....
+                    imageUrl = "http://www.goodoc.co.kr" + imageUrl;
+                  }
+                  var price = $(this)
+                    .find(".new-discounted-price")
+                    .text()
+                    .replace(/,/gi, "")
+                    .replace(/원/gi, "");
+                  var linkUrl =
+                    "http://www.goodoc.co.kr" +
+                    $(this)
+                      .parent()
+                      .attr("href");
+                  if (isNaN(price)) {
+                    price = 0;
+                  }
+                  contentObjArr[idx] = {
+                    part: partName,
+                    type: 3,
+                    title: title.replace(
+                      /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                      ""
+                    ),
+                    imageUrl: imageUrl,
+                    location: $(this)
+                      .find(".new-event-hospital-address")
+                      .text(),
+                    hospitalName: $(this)
+                      .find(".new-event-hospital-name")
+                      .text()
+                      .replace(/ /gi, ""),
+                    price: price,
+                    linkUrl: linkUrl,
+                    fname: fname,
+                    icon_image: "/image/goodoc_logo.png",
+                    icon_image_m: "/image/goodoc_logo_m.png",
+                    unique_key_column: partName + "_" + linkUrl
+                  };
+                  var requestOptions = {
+                    method: "GET",
+                    uri: contentObjArr[idx].imageUrl,
+                    headers: {
+                      "User-Agent":
+                        "Mozilla/5.0 (Windows; U; Windows NT 10.0) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.16"
+                    },
+                    encoding: null
+                  };
+                  (async function() {
+                    await request(requestOptions).pipe(
+                      fs.createWriteStream(
+                        savePathDirectory + "goodoc" + tableNum + "/" + fname
+                      )
+                    );
+                  });
+                });
+              queryCrawler.crawlingDataInsert(contentObjArr, tableNum, function(
+                callback
+              ) {
+                console.log("굿닥 " + partName + " callback : " + callback);
+              });
+              await browser.close();
+              res({
+                result: "success"
+              });
+            })();
+            async function getCount(page) {
+              return await page.$$eval(".new-a-event", (a) => a.length);
+            }
+            async function scrollDown(page) {
+              await page.$eval("#footer_container", (e) => {
+                e.scrollIntoView({
+                  behavior: "smooth",
+                  block: "end",
+                  inline: "end"
+                });
+              });
+            }
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  var partArr3_e_target = [
+    "눈",
+    "코",
+    "안면윤곽",
+    "가슴",
+    "바디라인",
+    "지방이식",
+    "양악",
+    "필러",
+    "보톡스",
+    "피부/여드름",
+    "리프팅",
+    "입술",
+    "치아",
+    "제모",
+    "반영구화장",
+    "모발이식",
+    "한방"
+  ];
+  var partArr3 = [
+    "눈",
+    "코",
+    "안면",
+    "가슴",
+    "몸매",
+    "지방",
+    "양악",
+    "필러",
+    "보톡스",
+    "피부",
+    "리프팅",
+    "입술",
+    "치아",
+    "제모",
+    "반영구",
+    "모발",
+    "한방"
+  ];
+  function meinhiCrawling(target, part, tableNum) {
+    return new Promise(function(res, rej) {
+      console.log("미인하이 " + part);
+      let url = "https://www.meinhi.com/event_list.php";
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_2 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) CriOS/63.0.3239.73 Mobile/15B202 Safari/604.1"
+          }
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            //미인하이는 아직 무한스크롤인지, 클릭 이벤트인지 모르겠는 상태임
+            var contentObjArr = [];
+            (async () => {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ["--window-size=1920,1080"]
+              });
+              const page = await browser.newPage();
+              await page.setUserAgent(
+                "Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_2 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) CriOS/63.0.3239.73 Mobile/15B202 Safari/604.1"
+              );
+              await page.goto(url);
+              await page.setViewport({
+                width: 1920,
+                height: 1080
+              });
+
+              await page.waitFor(1500);
+              await page.click("#span_type_text");
+              await page.waitFor(1000);
+              await page.click('a[data-type_text="' + target + '"]');
+              await page.waitFor(1000);
+              await page.click("#span_type_text");
+              await page.waitFor(500);
+              const body = await page.$eval("body", (e) => e.outerHTML);
+              const $ = cheerio.load(body);
+              var i = 0;
+              $(".deal_list_type")
+                .find("li")
+                .each(function(idx, el) {
+                  var imageUrl = $(this)
+                    .find("img")
+                    .attr("src");
+                  imageUrl = "https://www.meinhi.com/" + imageUrl.substring(2);
+                  var linkUrl = $(this)
+                    .find("a")
+                    .attr("href")
+                    .replace("'", "");
+                  var locationAndHospitalName = $(this)
+                    .find(".it_description")
+                    .text();
+                  var locationAndHospitalName = locationAndHospitalName.split(
+                    " "
+                  );
+                  var location, hospitalName;
+                  var title = $(this)
+                    .find(".it_name")
+                    .text();
+                  if (locationAndHospitalName.length > 2) {
+                    location = locationAndHospitalName[0];
+                    hospitalName =
+                      locationAndHospitalName[1] + locationAndHospitalName[2];
+                  } else {
+                    location = locationAndHospitalName[0];
+                    hospitalName = locationAndHospitalName[1];
+                  }
+                  var price = $(this)
+                    .find(".it_price2")
+                    .text();
+                  var fname = part + "_" + idx + ".jpg";
+                  contentObjArr[idx] = {
+                    type: 4,
+                    part: part,
+                    title: title.replace(
+                      /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                      ""
+                    ),
+                    imageUrl: imageUrl,
+                    location: location,
+                    hospitalName: hospitalName,
+                    price: price.replace(/,/gi, "").replace("원", ""),
+                    linkUrl: "https://www.meinhi.com/" + linkUrl,
+                    fname: fname,
+                    icon_image: "/image/meinhi_logo.png",
+                    icon_image_m: "/image/meinhi_logo_m.png",
+                    unique_key_column:
+                      part + "_" + "https://www.meinhi.com/" + linkUrl
+                  };
+                  //console.log(contentObjArr);
+                  var requestOptions = {
+                    method: "GET",
+                    uri: contentObjArr[idx].imageUrl,
+                    headers: {
+                      "User-Agent":
+                        "Mozilla/5.0 (iPhone; CPU iPhone OS 11_1_2 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) CriOS/63.0.3239.73 Mobile/15B202 Safari/604.1"
+                    },
+                    encoding: null
+                  };
+                  (async function() {
+                    await request(requestOptions).pipe(
+                      fs.createWriteStream(
+                        savePathDirectory + "meinhi" + tableNum + "/" + fname
+                      )
+                    );
+                  });
+                  i++;
+                });
+              if (i > 0) {
+                queryCrawler.crawlingDataInsert(
+                  contentObjArr,
+                  tableNum,
+                  function(callback) {
+                    console.log("미인하이 " + part + " callback : " + callback);
+                  }
+                );
+              } else {
+                console.log("미인하이 " + part + " 해당부위 크롤링값 없음");
+              }
+              await browser.close();
+              res({
+                result: "success"
+              });
+            })();
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  var partArr4_name = [
+    "눈",
+    "코",
+    "몸매",
+    "필러",
+    "가슴",
+    "입술",
+    "피부",
+    "안면",
+    "리프팅",
+    "지방",
+    "보톡스",
+    "반영구"
+  ];
+  var targetArr = [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "12",
+    "13"
+  ];
+  function miclickCrawling(partName, target, tableNum) {
+    return new Promise(function(res, rej) {
+      console.log("미클릭 " + partName);
+      //미클릭  40개가 넘을 경우, 더보기 버튼이 있다
+      let url =
+        "https://www.miclick.co.kr/mcm/index.php#mc_pg1||Y|price_a|all|consult|0";
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            var contentObjArr = [];
+            (async () => {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ["--window-size=1920,1080"]
+              });
+              const page = await browser.newPage();
+              await page.goto(url);
+              await page.setViewport({
+                width: 1920,
+                height: 1080
+              });
+              await page.waitFor(1000);
+              await page.click('#tab2 div[data-slick-index="' + target + '"]');
+              await page.waitFor(1000);
+              var itemCount = await getCount(page);
+              var loopCount = parseInt(itemCount / 40);
+              if (loopCount > 0) {
+                for (var i = 0; i < loopCount; i++) {
+                  await page.click("#btnMore");
+                  await page.waitFor(1000);
+                }
+              }
+              const body = await page.$eval("body", (e) => e.outerHTML);
+              const $ = cheerio.load(body);
+              $(".hotdeal-wrap")
+                .find(".item")
+                .each(function(idx, el) {
+                  var location = $(this)
+                    .find(".location span:first-child")
+                    .text()
+                    .trim();
+                  var hospitalName = $(this)
+                    .find(".location span:nth-child(2)")
+                    .text()
+                    .replace(/ /gi, "");
+                  var title = $(this)
+                    .find(".title")
+                    .text()
+                    .replace(/"/gi, "");
+                  var linkUrl = $(this).attr("onclick");
+                  linkUrl = linkUrl.substring(
+                    linkUrl.indexOf("(") + 1,
+                    linkUrl.indexOf(")")
+                  );
+                  linkUrl =
+                    "https://www.miclick.co.kr/mcm/item/service.php?it_id=" +
+                    linkUrl.replace(/\'/gi, "") +
+                    "&ca_code=";
+                  var imageUrl = $(this)
+                    .find("img")
+                    .attr("src");
+                  var price = $(this)
+                    .find(".price")
+                    .text()
+                    .replace(/,/gi, "")
+                    .replace("원", "")
+                    .trim();
+                  var fname = partName + "_" + idx + ".jpg";
+                  if (price.indexOf("만") != -1) {
+                    price = price.replace("만", "");
+                    price = price * 10000;
+                  } else {
+                    price = price * 1;
+                  }
+                  if (isNaN(price)) {
+                    //상담문의 글
+                    price = 0;
+                  }
+                  contentObjArr[idx] = {
+                    part: partName,
+                    type: 5,
+                    title: title.replace(
+                      /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                      ""
+                    ),
+                    imageUrl: "https://www.miclick.co.kr" + imageUrl,
+                    location: location,
+                    hospitalName: hospitalName,
+                    price: price,
+                    linkUrl: linkUrl,
+                    fname: fname,
+                    icon_image: "/image/miclick_logo.png",
+                    icon_image_m: "/image/miclick_logo_m.png",
+                    unique_key_column: partName + "_" + linkUrl
+                  };
+                  var requestOptions = {
+                    method: "GET",
+                    uri: contentObjArr[idx].imageUrl,
+                    headers: {
+                      "User-Agent":
+                        "Mozilla/5.0 (Windows; U; Windows NT 10.0) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.16"
+                    },
+                    encoding: null
+                  };
+                  (async function() {
+                    await request(requestOptions).pipe(
+                      fs.createWriteStream(
+                        savePathDirectory + "miclick" + tableNum + "/" + fname
+                      )
+                    );
+                  });
+                });
+              queryCrawler.crawlingDataInsert(contentObjArr, tableNum, function(
+                callback
+              ) {
+                console.log("미클릭 " + partName + " callback : " + callback);
+              });
+              await browser.close();
+              res({
+                result: "success"
+              });
+            })();
+            async function getCount(page) {
+              return await page.$$eval(".items", (a) => a.length);
+            }
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  var partArr5_name = ["피부", "얼굴", "몸매", "안과", "눈", "코", "모발"];
+  var partArr5_id = [
+    "5ac33b7f883fcb4159f40ba9",
+    "5ac33a65883fcb4159f40ba5",
+    "5ac33b96883fcb4159f40baf",
+    "5ac33bdf883fcb4159f40bbe",
+    "5ac33bad883fcb4159f40bb5",
+    "5ac33bc3883fcb4159f40bb9",
+    "5ac33c1d883fcb4159f40bca"
+  ];
+  function ddocdocCrawling(partName, partId, tableNum) {
+    return new Promise(function(res, rej) {
+      console.log("똑닥 " + partName);
+      //똑닥 페이지당 12개, 다음페이지로 이동할때, 12씩 숫자가늘어난다. 퍼펫티어에 가장 어려울듯
+      let url =
+        "https://event.ddocdoc.com/category/list?mainCategoryId=" + partId;
+      console.log(url);
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            var contentObjArr = [];
+            (async () => {
+              const browser = await puppeteer.launch({
+                headless: true,
+                args: ["--window-size=1920,1080"]
+              });
+              const page = await browser.newPage();
+              await page.goto(url, { waitUntil: "load", timeout: 0 });
+              await page.setViewport({
+                width: 1920,
+                height: 1080
+              });
+              await page.waitFor(1000);
+              var prevUrl, nextUrl;
+              var idx = 0;
+              do {
+                prevUrl = await getNextUrl(page); //현재 페이지에서 '>'의 href값 가져옴
+                await page.waitFor(500);
+                // 데이터 수집하고 다음창 클릭
+                const body = await page.$eval("body", (e) => e.outerHTML);
+                var $ = cheerio.load(body, {
+                  decodeEntities: false
+                });
+                $(".EventList__spaceBtw__Dr7jw")
+                  .find(".EventItem__wrap__3nGe4")
+                  .each(function(el) {
+                    var linkUrl = $(this)
+                      .find("a")
+                      .attr("href")
+                      .toString();
+                    var imageUrl = $(this)
+                      .find("img")
+                      .attr("src");
+                    var locationAndHospitalName = $(this)
+                      .find(".EventItem__hospital-info__2f-dx")
+                      .text()
+                      .trim();
+                    var location = "";
+                    var hospitalName;
+                    var title = $(this)
+                      .find(".EventItem__title__257Ou")
+                      .text()
+                      .trim()
+                      .replace(/"/gi, "");
+                    if (locationAndHospitalName.indexOf("∙") != -1) {
+                      locationAndHospitalName = locationAndHospitalName.split(
+                        "∙"
+                      );
+                      location = locationAndHospitalName[1];
+                      hospitalName = locationAndHospitalName[0];
+                    } else {
+                      hospitalName = locationAndHospitalName;
+                    }
+                    var price = $(this)
+                      .find(".PriceLine__price__1JKb4")
+                      .text()
+                      .replace("~", "");
+                    console.log(price);
+                    if (price.indexOf("만원") !== -1) {
+                      //XXX만원
+                      price = price.replace("만원", "");
+                      price = price * 10000;
+                    } else if (isNaN(price)) {
+                      //상담문의 글
+                      price = 0;
+                    } else if (price.indexOf("월") !== -1) {
+                      //월XX만원
+                      price = 0;
+                    } else {
+                      //XXXXXXXXX
+                      price = parseInt(price);
+                    }
+                    var fname = partName + "_" + idx + ".jpg";
+                    contentObjArr[idx] = {
+                      part: partName,
+                      type: 6,
+                      title: title.replace(
+                        /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                        ""
+                      ),
+                      imageUrl: imageUrl,
+                      location: location,
+                      hospitalName: hospitalName.replace(/ /gi, ""),
+                      price: price,
+                      linkUrl: "https://event.ddocdoc.com" + linkUrl,
+                      fname: fname,
+                      icon_image: "/image/ddocdoc_logo.png",
+                      icon_image_m: "/image/ddocdoc_logo_m.png",
+                      unique_key_column:
+                        partName + "_" + "https://event.ddocdoc.com" + linkUrl
+                    };
+                    var requestOptions = {
+                      method: "GET",
+                      uri: contentObjArr[idx].imageUrl,
+                      headers: {
+                        "User-Agent":
+                          "Mozilla/5.0 (Windows; U; Windows NT 10.0) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.16"
+                      },
+                      encoding: null
+                    };
+                    (async function() {
+                      await request(requestOptions).pipe(
+                        fs.createWriteStream(
+                          savePathDirectory + "ddocdoc" + tableNum + "/" + fname
+                        )
+                      );
+                    });
+                    idx++;
+                  });
+                await page.waitFor(500);
+                await page.click(".LinkPagination__page-dir__3DI3i:last-child");
+                await page.waitFor(1000);
+                nextUrl = await getNextUrl(page); //'>'를 클릭한 후에 '>'의 href값 다시가져옴
+                await page.waitFor(500);
+              } while (prevUrl[0] !== nextUrl[0]); //페이지 이동전 가져왔던 prevUrl과 이동 후 가져온 nextUrl이 같으면 마지막 페이지인 것
+              await browser.close();
+              queryCrawler.crawlingDataInsert(contentObjArr, tableNum, function(
+                callback
+              ) {
+                console.log("똑닥 " + partName + " callback : " + callback);
+                if (callback) {
+                  res({
+                    result: "success"
+                  });
+                }
+              });
+            })();
+            async function getNextUrl(page) {
+              return await page.$$eval(
+                ".LinkPagination__page-dir__3DI3i:last-child",
+                (a) => a.map((a) => a.href)
+              );
+            }
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  var partArr6 = [
+    "눈",
+    "필러",
+    "보톡스",
+    "반영구",
+    "피부",
+    "코",
+    "안면",
+    "모발",
+    "가슴",
+    "양악",
+    "지방"
+  ];
+  function reviewdocCrawling(partName, tableNum) {
+    return new Promise(function(res, rej) {
+      console.log("리뷰닥 " + partName);
+      //리뷰닥은 아직 무한스크롤인지, 클릭 이벤트인지 모르겠는 상태임 (이벤트가 적어서)
+      let url =
+        "https://www.reviewdoc.co.kr/pages/search?log=Y&searchKeyword=" +
+        encode(partName);
+      console.log(url);
+      request(
+        {
+          url: url,
+          method: "GET",
+          timeout: 10000
+        },
+        function(error, response, body) {
+          console.log(error);
+          if (
+            !error &&
+            (response.statusCode == 200 || response.statusCode == 302)
+          ) {
+            console.log("리퀘스트가 돌아옴");
+            var contentObjArr = [];
+            var $ = cheerio.load(body, {
+              decodeEntities: false
+            });
+            $(".mainPdtListArea")
+              .find(".listCell")
+              .each(function(idx, el) {
+                var linkUrl = $(this)
+                  .find(".pdtImgCell")
+                  .find("a")
+                  .attr("href");
+                var imageUrl =
+                  "https://www.reviewdoc.co.kr" +
+                  $(this)
+                    .find(".pdtImgCell")
+                    .find("img")
+                    .attr("src");
+                var locationAndHospitalName = $(this)
+                  .find(".companyNameCell")
+                  .text();
+                locationAndHospitalName = locationAndHospitalName.split(" ");
+                var title = $(this)
+                  .find(".titleCell")
+                  .text()
+                  .replace(/\n/gi, "")
+                  .replace(/\t/gi, "");
+                var location = locationAndHospitalName[2];
+                var hospitalName = locationAndHospitalName[0].trim();
+                var price = $(this)
+                  .find(".priceCell")
+                  .html()
+                  .replace(/\n/gi, "")
+                  .replace(/\t/gi, "")
+                  .replace(/,/gi, ""); //.replace(/,/gi,'').replace('원','');
+
+                if (location !== undefined) {
+                  location = location
+                    .trim()
+                    .replace("[", "")
+                    .replace("]", "");
+                } else {
+                  location = "";
+                }
+                var fname = partName + "_" + idx + ".jpg";
+                price = price
+                  .substring(price.indexOf("</div>"), price.indexOf(" 원"))
+                  .replace("</div>", "");
+                if (isNaN(price)) {
+                  price = 0;
+                }
+                contentObjArr[idx] = {
+                  part: partName,
+                  type: 7,
+                  title: title.replace(
+                    /([\uE000-\uF8FF]|\uD83C[\uDF00-\uDFFF]|\uD83D[\uDC00-\uDDFF])/g,
+                    ""
+                  ),
+                  imageUrl: imageUrl,
+                  location: location,
+                  hospitalName: hospitalName.replace(/ /gi, ""),
+                  price: price,
+                  linkUrl: "https://www.reviewdoc.co.kr" + linkUrl,
+                  fname: fname,
+                  icon_image: "/image/reviewdoc_logo.png",
+                  icon_image_m: "/image/reviewdoc_logo_m.png",
+                  unique_key_column:
+                    partName + "_" + "https://www.reviewdoc.co.kr" + linkUrl
+                };
+                var linkUrlArr = contentObjArr[0].linkUrl.split("=");
+                if (isNaN(linkUrlArr[1])) {
+                  //product-no 가 undefined인 경우
+                  contentObjArr[0].linkUrl =
+                    "https://www.reviewdoc.co.kr/pages/product/view?product_uid=" +
+                    $(".hotDealPdtCell")
+                      .find(".listCell")
+                      .attr("data-product-uid");
+                }
+                var requestOptions = {
+                  method: "GET",
+                  uri: contentObjArr[idx].imageUrl,
+                  headers: {
+                    "User-Agent":
+                      "Mozilla/5.0 (Windows; U; Windows NT 10.0) AppleWebKit/604.1.38 (KHTML, like Gecko) Chrome/68.0.3325.16"
+                  },
+                  encoding: null
+                };
+                (async function() {
+                  await request(requestOptions).pipe(
+                    fs.createWriteStream(
+                      savePathDirectory + "reviewdoc" + tableNum + "/" + fname
+                    )
+                  );
+                });
+              });
+            queryCrawler.crawlingDataInsert(contentObjArr, tableNum, function(
+              callback
+            ) {
+              console.log("리뷰닥 callback : " + callback);
+            });
+            res({
+              result: "success"
+            });
+          } else {
+            console.log("request요청에 응답없음 == 타겟 서버가 닫힘");
+            res({
+              result: "fail"
+            });
+          }
+        }
+      );
+    });
+  }
+
+  function getLawdiansData(tableNum) {
+    return new Promise(function(res, rej) {
+      console.log("로디언즈 in.........");
+      queryCrawler.lawdiansDataSelect(function(callback) {
+        var contents = callback.contents;
+
+        var contentObjArr = [];
+        if (callback) {
+          for (var i = 0; i < contents.length; i++) {
+            if (contents[i].operation == "안면윤곽") {
+              contents[i].operation = "안면";
+            } else if (contents[i].operation == "반영구시술") {
+              contents[i].operation = "반영구";
+            }
+            var price = contents[i].hospital_event_cost;
+            if (isNaN(price)) {
+              price = 0;
+            }
+            contentObjArr[i] = {
+              part: contents[i].operation,
+              type: 1,
+              title: contents[i].hospital_event_name,
+              imageUrl: "/image/event/" + contents[i].fname,
+              location:
+                contents[i].division_city_name +
+                " " +
+                contents[i].division_area_name,
+              hospitalName: contents[i].hospital_name.replace(/ /gi, ""),
+              price: price,
+              linkUrl:
+                "/relief/hospital/event/detail/" +
+                contents[i].hospital_event_no,
+              hospital_event_no: contents[i].hospital_event_no,
+              icon_image: "/image/lawdians_logo_event.png",
+              icon_image_m: "/image/lawdians_logo_event_m.png",
+              fname: contents[i].fname,
+              unique_key_column:
+                contents[i].operation +
+                "_" +
+                "/relief/hospital/event/detail/" +
+                contents[i].hospital_event_no
+            };
+          }
+          //console.log(contentObjArr);
+          queryCrawler.lawdiansDataInsert(contentObjArr, tableNum, function(
+            callback2
+          ) {
+            if (callback2) {
+              console.log("DB insert 성공");
+              res({
+                result: true
+              });
+            } else {
+              console.log("로디언즈 데이터 insert 실패");
+              res({
+                result: false
+              });
+            }
+          });
+        } else {
+          console.log("로디언즈 데이터 가져오기 실패");
+          res({
+            result: false
+          });
+        }
+      });
+    });
+  }
+
+  //크롤러 앱 작업시작
+
+  var currentTableNum = 1;
+
+  var newTableNum = 2;
+  //addressReworkProcess(newTableNum);
+  function addressReworkProcess(newTableNum) {
+    queryCrawler.getHospitalName(newTableNum, function(callback) {
+      if (callback.isSuccess) {
+        var contentsArr = callback.contents;
+        console.log(contentsArr.length);
+        processArray(contentsArr);
+
+        function delay() {
+          return new Promise((resolve) => setTimeout(resolve, 5000));
+        }
+        function delayDone() {
+          return new Promise((resolve) => setTimeout(resolve, 20000));
+        }
+
+        async function processArray(array) {
+          //var contentsObjArr = [];
+          for (const item of array) {
+            await delayedLog(item);
+            //await delayedLog(item,contentsObjArr);
+          }
+          await delayDone();
+          // await queryCrawler.reworkLocationData(contentsObjArr, function (callback) {
+          //   console.log('update callback : ' + callback.isSuccess);
+          //   console.log(callback.msg);
+          // })
+          // await delayDone();
+          console.log("process 종료");
+          process.exit(); //node server stop
+        }
+        async function delayedLog(item) {
+          //async function delayedLog(item,contentsObjArr) {
+          await delay();
+          var hospitalName = item.hospital_name
+            .replace(/\t/gi, "")
+            .replace(/\n/gi, "");
+          console.log(hospitalName);
+          var url = "https://google.com/search?q=" + encode(hospitalName);
+          request(
+            {
+              url: url,
+              method: "GET",
+              timeout: 2500
+            },
+            function() {
+              (async () => {
+                const browser = await puppeteer.launch({
+                  headless: true,
+                  args: ["--window-size=1920,1080"]
+                });
+                const page = await browser.newPage();
+                await page.goto(url);
+                await page.setViewport({
+                  width: 1920,
+                  height: 1080
+                });
+                await page.waitFor(300);
+                const body = await page.$eval("body", (e) => e.outerHTML);
+                var $ = cheerio.load(body, {
+                  decodeEntities: false
+                });
+                var address = $(".LrzXr")
+                  .first()
+                  .text();
+                console.log(address);
+                var data1, data2;
+                if (address === "" || address === undefined) {
+                  //기존 정보 그대로
+                  data1 = "기타";
+                  data2 = "기타지역";
+                } else {
+                  //스플릿
+                  address = address.split(" ");
+                  if (address[0] === "KR") {
+                    // KR XX시 XX구
+                    data1 = address[1];
+                    data2 = address[2];
+                  } else if (
+                    address[0].indexOf("특별시") !== -1 ||
+                    address[0].indexOf("광역시") !== -1 ||
+                    address[0].substring(address[0].length - 1) === "도"
+                  ) {
+                    //XX시 XX구 or XX도 XX시.....
+                    data1 = address[0];
+                    if (address[1].indexOf("논현동") !== -1) {
+                      data2 = "강남구";
+                    } else if (address[1].indexOf("6,") !== -1) {
+                      //JK위드미 성형외과 부평점
+                      data2 = address[5];
+                    } else if (address[1].indexOf("4동") !== -1) {
+                      data2 = "서초구";
+                    } else {
+                      data2 = address[1];
+                    }
+                  } else {
+                    if (address[address.length - 1].indexOf("KR") !== -1) {
+                      // ... XX구 서울특별시 KR
+                      if (address[address.length - 2].indexOf("Seoul") !== -1) {
+                        //리노보클리닉 강남점
+                        data1 = "서울특별시";
+                        data2 = "강남구";
+                      } else {
+                        data1 = address[address.length - 2];
+                        data2 = address[address.length - 3];
+                      }
+                    } else {
+                      // ... XX구 서울특별시
+                      if (address[address.length - 2] === undefined) {
+                        //문의전화 : 1688-XXXX
+                        data1 = "기타";
+                        data2 = "기타지역";
+                      } else {
+                        data1 = address[address.length - 1];
+                        data2 = address[address.length - 2];
+                      }
+                    }
+                  }
+                }
+                await browser.close();
+                var contentObj = {
+                  city: data1,
+                  area: data2,
+                  hospital_name: hospitalName
+                };
+                console.log(contentObj);
+                //contentsObjArr.push(contentObj);
+                await queryCrawler.reworkLocationData(contentObj, function(
+                  callback
+                ) {
+                  console.log("update callback : " + callback.isSuccess);
+                  console.log(callback.msg);
+                });
+              })();
+            }
+          );
+        }
+      } else {
+        console.log("getHospitalName fail");
+      }
+    });
+  }
+
+  console.log("크롤러 스타트");
+  platformArr.forEach((item) => {
+    fs.mkdir(
+      savePathDirectory + item + newTableNum,
+      { recursive: true },
+      (err) => {
+        //새로 저장할 이미지 폴더 생성
+        if (err) throw err;
+        console.log(item + newTableNum + " 폴더생성 완료");
+      }
+    );
+  });
+
+  setTimeout(() => {
+    duplication(newTableNum).then(function(result) {
+      //새로 저장할 Table 데이터 insert
+      if (result) {
+        //duplication이 완료된 후 진행해야함
+        console.log("duplication" + currentTableNum + " 완료");
+        platformArr.forEach((item) => {
+          //원래 저장된 이미지폴더 삭제
+          rimraf(savePathDirectory + item + currentTableNum, function() {
+            console.log(item + currentTableNum + " 삭제완료");
+          });
+        });
+        queryCrawler.getSafetyHospital(newTableNum, function(callback) {
+          //로디언즈 안심병원 목록 가져오기
+          if (callback.isSuccess) {
+            setTimeout(() => {
+              console.log("안심병원 변경 성공");
+              addressReworkProcess(newTableNum);
+            }, 20000);
+          }
+        });
+      }
+    });
+  }, 1000);
+
+  // 테이블 이중화 함수
+  function duplication(tableNum) {
+    return new Promise(function(res, rej) {
+      gangnamsisterCrawling(partArr1[0], tableNum).then(function(result) {
+        gangnamsisterCrawling(partArr1[1], tableNum).then(function(result) {
+          gangnamsisterCrawling(partArr1[2], tableNum).then(function(result) {
+            gangnamsisterCrawling(partArr1[3], tableNum).then(function(result) {
+              gangnamsisterCrawling(partArr1[4], tableNum).then(function(
+                result
+              ) {
+                gangnamsisterCrawling(partArr1[5], tableNum).then(function(
+                  result
+                ) {
+                  gangnamsisterCrawling(partArr1[6], tableNum).then(function(
+                    result
+                  ) {
+                    gangnamsisterCrawling(partArr1[7], tableNum).then(function(
+                      result
+                    ) {
+                      gangnamsisterCrawling(partArr1[8], tableNum).then(
+                        function(result) {
+                          gangnamsisterCrawling(partArr1[9], tableNum).then(
+                            function(result) {
+                              gangnamsisterCrawling(
+                                partArr1[10],
+                                tableNum
+                              ).then(function(result) {
+                                console.log("강남언니 최종 " + result.result);
+                                //task2 : 굿닥
+                                goodocCrawling(
+                                  partArr2_no[0],
+                                  partArr2_name[0],
+                                  tableNum
+                                ).then(function(result) {
+                                  goodocCrawling(
+                                    partArr2_no[1],
+                                    partArr2_name[1],
+                                    tableNum
+                                  ).then(function(result) {
+                                    goodocCrawling(
+                                      partArr2_no[2],
+                                      partArr2_name[2],
+                                      tableNum
+                                    ).then(function(result) {
+                                      goodocCrawling(
+                                        partArr2_no[3],
+                                        partArr2_name[3],
+                                        tableNum
+                                      ).then(function(result) {
+                                        goodocCrawling(
+                                          partArr2_no[4],
+                                          partArr2_name[4],
+                                          tableNum
+                                        ).then(function(result) {
+                                          goodocCrawling(
+                                            partArr2_no[5],
+                                            partArr2_name[5],
+                                            tableNum
+                                          ).then(function(result) {
+                                            goodocCrawling(
+                                              partArr2_no[6],
+                                              partArr2_name[6],
+                                              tableNum
+                                            ).then(function(result) {
+                                              goodocCrawling(
+                                                partArr2_no[7],
+                                                partArr2_name[7],
+                                                tableNum
+                                              ).then(function(result) {
+                                                goodocCrawling(
+                                                  partArr2_no[8],
+                                                  partArr2_name[8],
+                                                  tableNum
+                                                ).then(function(result) {
+                                                  goodocCrawling(
+                                                    partArr2_no[9],
+                                                    partArr2_name[9],
+                                                    tableNum
+                                                  ).then(function(result) {
+                                                    console.log(
+                                                      "굿닥 최종 " +
+                                                        result.result
+                                                    );
+                                                    // //task3 : 미인하이
+                                                    meinhiCrawling(
+                                                      partArr3_e_target[0],
+                                                      partArr3[0],
+                                                      tableNum
+                                                    ).then(function(result) {
+                                                      meinhiCrawling(
+                                                        partArr3_e_target[1],
+                                                        partArr3[1],
+                                                        tableNum
+                                                      ).then(function(result) {
+                                                        meinhiCrawling(
+                                                          partArr3_e_target[2],
+                                                          partArr3[2],
+                                                          tableNum
+                                                        ).then(function(
+                                                          result
+                                                        ) {
+                                                          meinhiCrawling(
+                                                            partArr3_e_target[3],
+                                                            partArr3[3],
+                                                            tableNum
+                                                          ).then(function(
+                                                            result
+                                                          ) {
+                                                            meinhiCrawling(
+                                                              partArr3_e_target[4],
+                                                              partArr3[4],
+                                                              tableNum
+                                                            ).then(function(
+                                                              result
+                                                            ) {
+                                                              meinhiCrawling(
+                                                                partArr3_e_target[5],
+                                                                partArr3[5],
+                                                                tableNum
+                                                              ).then(function(
+                                                                result
+                                                              ) {
+                                                                meinhiCrawling(
+                                                                  partArr3_e_target[6],
+                                                                  partArr3[6],
+                                                                  tableNum
+                                                                ).then(function(
+                                                                  result
+                                                                ) {
+                                                                  meinhiCrawling(
+                                                                    partArr3_e_target[7],
+                                                                    partArr3[7],
+                                                                    tableNum
+                                                                  ).then(
+                                                                    function(
+                                                                      result
+                                                                    ) {
+                                                                      meinhiCrawling(
+                                                                        partArr3_e_target[8],
+                                                                        partArr3[8],
+                                                                        tableNum
+                                                                      ).then(
+                                                                        function(
+                                                                          result
+                                                                        ) {
+                                                                          meinhiCrawling(
+                                                                            partArr3_e_target[9],
+                                                                            partArr3[9],
+                                                                            tableNum
+                                                                          ).then(
+                                                                            function(
+                                                                              result
+                                                                            ) {
+                                                                              meinhiCrawling(
+                                                                                partArr3_e_target[10],
+                                                                                partArr3[10],
+                                                                                tableNum
+                                                                              ).then(
+                                                                                function(
+                                                                                  result
+                                                                                ) {
+                                                                                  meinhiCrawling(
+                                                                                    partArr3_e_target[11],
+                                                                                    partArr3[11],
+                                                                                    tableNum
+                                                                                  ).then(
+                                                                                    function(
+                                                                                      result
+                                                                                    ) {
+                                                                                      meinhiCrawling(
+                                                                                        partArr3_e_target[12],
+                                                                                        partArr3[12],
+                                                                                        tableNum
+                                                                                      ).then(
+                                                                                        function(
+                                                                                          result
+                                                                                        ) {
+                                                                                          meinhiCrawling(
+                                                                                            partArr3_e_target[13],
+                                                                                            partArr3[13],
+                                                                                            tableNum
+                                                                                          ).then(
+                                                                                            function(
+                                                                                              result
+                                                                                            ) {
+                                                                                              meinhiCrawling(
+                                                                                                partArr3_e_target[14],
+                                                                                                partArr3[14],
+                                                                                                tableNum
+                                                                                              ).then(
+                                                                                                function(
+                                                                                                  result
+                                                                                                ) {
+                                                                                                  meinhiCrawling(
+                                                                                                    partArr3_e_target[15],
+                                                                                                    partArr3[15],
+                                                                                                    tableNum
+                                                                                                  ).then(
+                                                                                                    function(
+                                                                                                      result
+                                                                                                    ) {
+                                                                                                      meinhiCrawling(
+                                                                                                        partArr3_e_target[16],
+                                                                                                        partArr3[16],
+                                                                                                        tableNum
+                                                                                                      ).then(
+                                                                                                        function(
+                                                                                                          result
+                                                                                                        ) {
+                                                                                                          console.log(
+                                                                                                            "미인하이 최종 " +
+                                                                                                              result.result
+                                                                                                          );
+                                                                                                          // //task4 : 미클릭
+                                                                                                          miclickCrawling(
+                                                                                                            partArr4_name[0],
+                                                                                                            targetArr[0],
+                                                                                                            tableNum
+                                                                                                          ).then(
+                                                                                                            function(
+                                                                                                              result
+                                                                                                            ) {
+                                                                                                              miclickCrawling(
+                                                                                                                partArr4_name[1],
+                                                                                                                targetArr[1],
+                                                                                                                tableNum
+                                                                                                              ).then(
+                                                                                                                function(
+                                                                                                                  result
+                                                                                                                ) {
+                                                                                                                  miclickCrawling(
+                                                                                                                    partArr4_name[2],
+                                                                                                                    targetArr[2],
+                                                                                                                    tableNum
+                                                                                                                  ).then(
+                                                                                                                    function(
+                                                                                                                      result
+                                                                                                                    ) {
+                                                                                                                      miclickCrawling(
+                                                                                                                        partArr4_name[3],
+                                                                                                                        targetArr[3],
+                                                                                                                        tableNum
+                                                                                                                      ).then(
+                                                                                                                        function(
+                                                                                                                          result
+                                                                                                                        ) {
+                                                                                                                          miclickCrawling(
+                                                                                                                            partArr4_name[4],
+                                                                                                                            targetArr[4],
+                                                                                                                            tableNum
+                                                                                                                          ).then(
+                                                                                                                            function(
+                                                                                                                              result
+                                                                                                                            ) {
+                                                                                                                              miclickCrawling(
+                                                                                                                                partArr4_name[5],
+                                                                                                                                targetArr[5],
+                                                                                                                                tableNum
+                                                                                                                              ).then(
+                                                                                                                                function(
+                                                                                                                                  result
+                                                                                                                                ) {
+                                                                                                                                  miclickCrawling(
+                                                                                                                                    partArr4_name[6],
+                                                                                                                                    targetArr[6],
+                                                                                                                                    tableNum
+                                                                                                                                  ).then(
+                                                                                                                                    function(
+                                                                                                                                      result
+                                                                                                                                    ) {
+                                                                                                                                      miclickCrawling(
+                                                                                                                                        partArr4_name[7],
+                                                                                                                                        targetArr[7],
+                                                                                                                                        tableNum
+                                                                                                                                      ).then(
+                                                                                                                                        function(
+                                                                                                                                          result
+                                                                                                                                        ) {
+                                                                                                                                          miclickCrawling(
+                                                                                                                                            partArr4_name[8],
+                                                                                                                                            targetArr[8],
+                                                                                                                                            tableNum
+                                                                                                                                          ).then(
+                                                                                                                                            function(
+                                                                                                                                              result
+                                                                                                                                            ) {
+                                                                                                                                              miclickCrawling(
+                                                                                                                                                partArr4_name[9],
+                                                                                                                                                targetArr[9],
+                                                                                                                                                tableNum
+                                                                                                                                              ).then(
+                                                                                                                                                function(
+                                                                                                                                                  result
+                                                                                                                                                ) {
+                                                                                                                                                  miclickCrawling(
+                                                                                                                                                    partArr4_name[10],
+                                                                                                                                                    targetArr[10],
+                                                                                                                                                    tableNum
+                                                                                                                                                  ).then(
+                                                                                                                                                    function(
+                                                                                                                                                      result
+                                                                                                                                                    ) {
+                                                                                                                                                      miclickCrawling(
+                                                                                                                                                        partArr4_name[11],
+                                                                                                                                                        targetArr[11],
+                                                                                                                                                        tableNum
+                                                                                                                                                      ).then(
+                                                                                                                                                        function(
+                                                                                                                                                          result
+                                                                                                                                                        ) {
+                                                                                                                                                          console.log(
+                                                                                                                                                            "미클릭 최종 " +
+                                                                                                                                                              result.result
+                                                                                                                                                          );
+                                                                                                                                                          // //task5 : 똑닥
+
+                                                                                                                                                          ddocdocCrawling(
+                                                                                                                                                            partArr5_name[0],
+                                                                                                                                                            partArr5_id[0],
+                                                                                                                                                            tableNum
+                                                                                                                                                          ).then(
+                                                                                                                                                            function(
+                                                                                                                                                              result
+                                                                                                                                                            ) {
+                                                                                                                                                              ddocdocCrawling(
+                                                                                                                                                                partArr5_name[1],
+                                                                                                                                                                partArr5_id[1],
+                                                                                                                                                                tableNum
+                                                                                                                                                              ).then(
+                                                                                                                                                                function(
+                                                                                                                                                                  result
+                                                                                                                                                                ) {
+                                                                                                                                                                  ddocdocCrawling(
+                                                                                                                                                                    partArr5_name[2],
+                                                                                                                                                                    partArr5_id[2],
+                                                                                                                                                                    tableNum
+                                                                                                                                                                  ).then(
+                                                                                                                                                                    function(
+                                                                                                                                                                      result
+                                                                                                                                                                    ) {
+                                                                                                                                                                      ddocdocCrawling(
+                                                                                                                                                                        partArr5_name[3],
+                                                                                                                                                                        partArr5_id[3],
+                                                                                                                                                                        tableNum
+                                                                                                                                                                      ).then(
+                                                                                                                                                                        function(
+                                                                                                                                                                          result
+                                                                                                                                                                        ) {
+                                                                                                                                                                          ddocdocCrawling(
+                                                                                                                                                                            partArr5_name[4],
+                                                                                                                                                                            partArr5_id[4],
+                                                                                                                                                                            tableNum
+                                                                                                                                                                          ).then(
+                                                                                                                                                                            function(
+                                                                                                                                                                              result
+                                                                                                                                                                            ) {
+                                                                                                                                                                              ddocdocCrawling(
+                                                                                                                                                                                partArr5_name[5],
+                                                                                                                                                                                partArr5_id[5],
+                                                                                                                                                                                tableNum
+                                                                                                                                                                              ).then(
+                                                                                                                                                                                function(
+                                                                                                                                                                                  result
+                                                                                                                                                                                ) {
+                                                                                                                                                                                  ddocdocCrawling(
+                                                                                                                                                                                    partArr5_name[6],
+                                                                                                                                                                                    partArr5_id[6],
+                                                                                                                                                                                    tableNum
+                                                                                                                                                                                  ).then(
+                                                                                                                                                                                    function(
+                                                                                                                                                                                      result
+                                                                                                                                                                                    ) {
+                                                                                                                                                                                      console.log(
+                                                                                                                                                                                        "똑닥 최종 " +
+                                                                                                                                                                                          result.result
+                                                                                                                                                                                      );
+                                                                                                                                                                                      // //task6 : 리뷰닥
+                                                                                                                                                                                      reviewdocCrawling(
+                                                                                                                                                                                        partArr6[0],
+                                                                                                                                                                                        tableNum
+                                                                                                                                                                                      ).then(
+                                                                                                                                                                                        function(
+                                                                                                                                                                                          result
+                                                                                                                                                                                        ) {
+                                                                                                                                                                                          reviewdocCrawling(
+                                                                                                                                                                                            partArr6[1],
+                                                                                                                                                                                            tableNum
+                                                                                                                                                                                          ).then(
+                                                                                                                                                                                            function(
+                                                                                                                                                                                              result
+                                                                                                                                                                                            ) {
+                                                                                                                                                                                              reviewdocCrawling(
+                                                                                                                                                                                                partArr6[2],
+                                                                                                                                                                                                tableNum
+                                                                                                                                                                                              ).then(
+                                                                                                                                                                                                function(
+                                                                                                                                                                                                  result
+                                                                                                                                                                                                ) {
+                                                                                                                                                                                                  reviewdocCrawling(
+                                                                                                                                                                                                    partArr6[3],
+                                                                                                                                                                                                    tableNum
+                                                                                                                                                                                                  ).then(
+                                                                                                                                                                                                    function(
+                                                                                                                                                                                                      result
+                                                                                                                                                                                                    ) {
+                                                                                                                                                                                                      reviewdocCrawling(
+                                                                                                                                                                                                        partArr6[4],
+                                                                                                                                                                                                        tableNum
+                                                                                                                                                                                                      ).then(
+                                                                                                                                                                                                        function(
+                                                                                                                                                                                                          result
+                                                                                                                                                                                                        ) {
+                                                                                                                                                                                                          reviewdocCrawling(
+                                                                                                                                                                                                            partArr6[5],
+                                                                                                                                                                                                            tableNum
+                                                                                                                                                                                                          ).then(
+                                                                                                                                                                                                            function(
+                                                                                                                                                                                                              result
+                                                                                                                                                                                                            ) {
+                                                                                                                                                                                                              reviewdocCrawling(
+                                                                                                                                                                                                                partArr6[6],
+                                                                                                                                                                                                                tableNum
+                                                                                                                                                                                                              ).then(
+                                                                                                                                                                                                                function(
+                                                                                                                                                                                                                  result
+                                                                                                                                                                                                                ) {
+                                                                                                                                                                                                                  reviewdocCrawling(
+                                                                                                                                                                                                                    partArr6[7],
+                                                                                                                                                                                                                    tableNum
+                                                                                                                                                                                                                  ).then(
+                                                                                                                                                                                                                    function(
+                                                                                                                                                                                                                      result
+                                                                                                                                                                                                                    ) {
+                                                                                                                                                                                                                      reviewdocCrawling(
+                                                                                                                                                                                                                        partArr6[8],
+                                                                                                                                                                                                                        tableNum
+                                                                                                                                                                                                                      ).then(
+                                                                                                                                                                                                                        function(
+                                                                                                                                                                                                                          result
+                                                                                                                                                                                                                        ) {
+                                                                                                                                                                                                                          reviewdocCrawling(
+                                                                                                                                                                                                                            partArr6[9],
+                                                                                                                                                                                                                            tableNum
+                                                                                                                                                                                                                          ).then(
+                                                                                                                                                                                                                            function(
+                                                                                                                                                                                                                              result
+                                                                                                                                                                                                                            ) {
+                                                                                                                                                                                                                              reviewdocCrawling(
+                                                                                                                                                                                                                                partArr6[10],
+                                                                                                                                                                                                                                tableNum
+                                                                                                                                                                                                                              ).then(
+                                                                                                                                                                                                                                function(
+                                                                                                                                                                                                                                  result
+                                                                                                                                                                                                                                ) {
+                                                                                                                                                                                                                                  console.log(
+                                                                                                                                                                                                                                    "리뷰닥 최종 " +
+                                                                                                                                                                                                                                      result.result
+                                                                                                                                                                                                                                  );
+                                                                                                                                                                                                                                  getLawdiansData(
+                                                                                                                                                                                                                                    tableNum
+                                                                                                                                                                                                                                  ).then(
+                                                                                                                                                                                                                                    function(
+                                                                                                                                                                                                                                      result
+                                                                                                                                                                                                                                    ) {
+                                                                                                                                                                                                                                      if (
+                                                                                                                                                                                                                                        result
+                                                                                                                                                                                                                                      ) {
+                                                                                                                                                                                                                                        res(
+                                                                                                                                                                                                                                          {
+                                                                                                                                                                                                                                            result:
+                                                                                                                                                                                                                                              "success"
+                                                                                                                                                                                                                                          }
+                                                                                                                                                                                                                                        );
+                                                                                                                                                                                                                                      }
+                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                  );
+                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                              );
+                                                                                                                                                                                                                            }
+                                                                                                                                                                                                                          );
+                                                                                                                                                                                                                        }
+                                                                                                                                                                                                                      );
+                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                  );
+                                                                                                                                                                                                                }
+                                                                                                                                                                                                              );
+                                                                                                                                                                                                            }
+                                                                                                                                                                                                          );
+                                                                                                                                                                                                        }
+                                                                                                                                                                                                      );
+                                                                                                                                                                                                    }
+                                                                                                                                                                                                  );
+                                                                                                                                                                                                }
+                                                                                                                                                                                              );
+                                                                                                                                                                                            }
+                                                                                                                                                                                          );
+                                                                                                                                                                                        }
+                                                                                                                                                                                      );
+                                                                                                                                                                                    }
+                                                                                                                                                                                  );
+                                                                                                                                                                                }
+                                                                                                                                                                              );
+                                                                                                                                                                            }
+                                                                                                                                                                          );
+                                                                                                                                                                        }
+                                                                                                                                                                      );
+                                                                                                                                                                    }
+                                                                                                                                                                  );
+                                                                                                                                                                }
+                                                                                                                                                              );
+                                                                                                                                                            }
+                                                                                                                                                          );
+                                                                                                                                                        }
+                                                                                                                                                      );
+                                                                                                                                                    }
+                                                                                                                                                  );
+                                                                                                                                                }
+                                                                                                                                              );
+                                                                                                                                            }
+                                                                                                                                          );
+                                                                                                                                        }
+                                                                                                                                      );
+                                                                                                                                    }
+                                                                                                                                  );
+                                                                                                                                }
+                                                                                                                              );
+                                                                                                                            }
+                                                                                                                          );
+                                                                                                                        }
+                                                                                                                      );
+                                                                                                                    }
+                                                                                                                  );
+                                                                                                                }
+                                                                                                              );
+                                                                                                            }
+                                                                                                          );
+                                                                                                        }
+                                                                                                      );
+                                                                                                    }
+                                                                                                  );
+                                                                                                }
+                                                                                              );
+                                                                                            }
+                                                                                          );
+                                                                                        }
+                                                                                      );
+                                                                                    }
+                                                                                  );
+                                                                                }
+                                                                              );
+                                                                            }
+                                                                          );
+                                                                        }
+                                                                      );
+                                                                    }
+                                                                  );
+                                                                });
+                                                              });
+                                                            });
+                                                          });
+                                                        });
+                                                      });
+                                                    });
+                                                  });
+                                                });
+                                              });
+                                            });
+                                          });
+                                        });
+                                      });
+                                    });
+                                  });
+                                });
+                              });
+                            }
+                          );
+                        }
+                      );
+                    });
+                  });
+                });
+              });
+            });
+          });
+        });
+      });
+    });
+  }
+
+  //테스트할 플랫폼을 넣으삼
+  // function duplication(tableNum) {
+  //   return new Promise(function(res, rej) {
+
+  //   });
+  // }
+}

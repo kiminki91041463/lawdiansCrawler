@@ -1,0 +1,180 @@
+크롤링 전 폴더, DB 삭제
+
+gangnamsister 삭제완료
+goodoc 삭제완료
+meinhi 삭제완료
+miclick 삭제완료
+ddocdoc 삭제완료
+reviewdoc 삭제완료
+crawler_data 비우기
+
+true
+ddocdoc 폴더생성
+
+miclick 폴더생성
+
+meinhi 폴더생성
+
+goodoc 폴더생성
+
+reviewdoc 폴더생성
+
+gangnamsister 폴더생성
+
+새벽 3시 크롤링 시작
+
+강남언니 눈
+강남언니 필러
+강남언니 눈 callback : true
+강남언니 보톡스
+강남언니 필러 callback : true
+강남언니 반영구
+강남언니 보톡스 callback : true
+강남언니 피부
+강남언니 반영구 callback : true
+강남언니 코
+강남언니 피부 callback : true
+강남언니 안면
+강남언니 코 callback : true
+강남언니 모발
+강남언니 안면 callback : true
+강남언니 가슴
+강남언니 모발 callback : true
+강남언니 가슴 callback : true
+강남언니 양악
+강남언니 지방
+강남언니 양악 callback : true
+강남언니 최종 success
+강남언니 지방 callback : true
+새벽 3시 2분 
+
+굿닥 몸매
+굿닥 눈
+굿닥 몸매 callback : true
+굿닥 코
+굿닥 눈 callback : true
+굿닥 안과
+굿닥 코 callback : true
+굿닥 치아
+굿닥 안과 callback : true
+굿닥 안면
+굿닥 치아 callback : true
+굿닥 피부
+굿닥 안면 callback : true
+굿닥 모발
+굿닥 피부 callback : true
+굿닥 한방
+굿닥 모발 callback : true
+굿닥 건강검진
+굿닥 한방 callback : true
+굿닥 최종 success
+굿닥 건강검진 callback : true
+새벽 3시 4분
+
+미인하이 눈
+미인하이 눈 callback : true
+미인하이 코
+미인하이 코 callback : true
+미인하이 안면
+미인하이 안면 callback : true
+미인하이 가슴
+미인하이 가슴 callback : true
+미인하이 몸매
+미인하이 몸매 callback : true
+미인하이 지방
+미인하이 지방 callback : true
+미인하이 양악
+미인하이 필러
+미인하이 필러 callback : true
+미인하이 보톡스
+미인하이 보톡스 callback : true
+미인하이 피부
+미인하이 피부 callback : true
+미인하이 리프팅
+미인하이 리프팅 callback : true
+미인하이 입술
+미인하이 입술 callback : true
+미인하이 치아
+미인하이 제모
+미인하이 제모 callback : true
+미인하이 반영구
+미인하이 반영구 callback : true
+미인하이 모발
+새벽 3시 6분
+
+미클릭 눈
+미인하이 모발 callback : true
+미인하이 한방
+미클릭 눈 callback : true
+미클릭 코
+미인하이 최종 success
+미클릭 코 callback : true
+미클릭 몸매
+미클릭 몸매 callback : true
+미클릭 필러
+미클릭 필러 callback : true
+미클릭 가슴
+미클릭 가슴 callback : true
+미클릭 입술
+미클릭 입술 callback : true
+미클릭 피부
+미클릭 피부 callback : true
+미클릭 안면
+미클릭 안면 callback : true
+미클릭 리프팅
+미클릭 리프팅 callback : true
+미클릭 지방
+미클릭 지방 callback : true
+미클릭 보톡스
+미클릭 보톡스 callback : true
+미클릭 반영구
+미클릭 반영구 callback : true
+미클릭 최종 success
+새벽 3시 8분
+
+똑닥 얼굴
+똑닥 몸매
+똑닥 얼굴 callback : true
+똑닥 피부
+똑닥 몸매 callback : true
+똑닥 안과
+똑닥 피부 callback : true
+똑닥 눈
+똑닥 안과 callback : true
+똑닥 코
+똑닥 눈 callback : true
+똑닥 치아
+똑닥 코 callback : true
+똑닥 모발
+똑닥 치아 callback : true
+똑닥 최종 success
+똑닥 모발 callback : true
+새벽 3시 10분
+
+리뷰닥 눈
+리뷰닥 필러
+리뷰닥 callback : true
+리뷰닥 보톡스
+리뷰닥 callback : true
+리뷰닥 반영구
+리뷰닥 callback : true
+리뷰닥 피부
+리뷰닥 callback : true
+리뷰닥 코
+리뷰닥 callback : true
+리뷰닥 안면
+리뷰닥 callback : true
+리뷰닥 모발
+리뷰닥 callback : true
+리뷰닥 가슴
+리뷰닥 callback : true
+리뷰닥 양악
+리뷰닥 callback : true
+리뷰닥 지방
+리뷰닥 callback : true
+리뷰닥 최종 success
+로디언즈 in.........
+로디언즈 db select에 들어옴
+로디언즈 끝
+리뷰닥 callback : true
+DB insert 성공

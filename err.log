@@ -1,0 +1,84 @@
+{ Error: ER_EMPTY_QUERY: Query was empty
+    at Query.Sequence._packetToError (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:47:14)
+    at Query.ErrorPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:77:18)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+    at Parser.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:43:10)
+    at Protocol.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:38:16)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:91:28)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Socket.emit (events.js:182:13)
+    at addChunk (_stream_readable.js:283:12)
+    --------------------
+    at Protocol._enqueue (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:144:48)
+    at PoolConnection.query (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:201:25)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\models\queryCrawler.js:21:22)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Query._callback (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:491:16)
+    at Query.Sequence.end (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:83:24)
+    at Query._handleFinalResultPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:139:8)
+    at Query.OkPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:72:10)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+  code: 'ER_EMPTY_QUERY',
+  errno: 1065,
+  sqlMessage: 'Query was empty',
+  sqlState: '42000',
+  index: 0,
+  sql: '' } 'err'
+{ Error: ER_EMPTY_QUERY: Query was empty
+    at Query.Sequence._packetToError (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:47:14)
+    at Query.ErrorPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:77:18)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+    at Parser.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:43:10)
+    at Protocol.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:38:16)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:91:28)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Socket.emit (events.js:182:13)
+    at addChunk (_stream_readable.js:283:12)
+    --------------------
+    at Protocol._enqueue (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:144:48)
+    at PoolConnection.query (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:201:25)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\models\queryCrawler.js:21:22)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Query._callback (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:491:16)
+    at Query.Sequence.end (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:83:24)
+    at Query._handleFinalResultPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:139:8)
+    at Query.OkPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:72:10)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+  code: 'ER_EMPTY_QUERY',
+  errno: 1065,
+  sqlMessage: 'Query was empty',
+  sqlState: '42000',
+  index: 0,
+  sql: '' } 'err'
+{ Error: ER_EMPTY_QUERY: Query was empty
+    at Query.Sequence._packetToError (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:47:14)
+    at Query.ErrorPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:77:18)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+    at Parser.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:43:10)
+    at Protocol.write (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:38:16)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:91:28)
+    at Socket.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Socket.emit (events.js:182:13)
+    at addChunk (_stream_readable.js:283:12)
+    --------------------
+    at Protocol._enqueue (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:144:48)
+    at PoolConnection.query (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:201:25)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\models\queryCrawler.js:21:22)
+    at Query.<anonymous> (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:525:10)
+    at Query._callback (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\Connection.js:491:16)
+    at Query.Sequence.end (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Sequence.js:83:24)
+    at Query._handleFinalResultPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:139:8)
+    at Query.OkPacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\sequences\Query.js:72:10)
+    at Protocol._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Protocol.js:291:23)
+    at Parser._parsePacket (C:\workspace\svn-sabo\lawdiansCrawler\node_modules\mysql\lib\protocol\Parser.js:433:10)
+  code: 'ER_EMPTY_QUERY',
+  errno: 1065,
+  sqlMessage: 'Query was empty',
+  sqlState: '42000',
+  index: 0,
+  sql: '' } 'err'
